@@ -1,0 +1,86 @@
+VHDL code 1
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+entity FuzzySpeedController is
+ Port ( e : in STD_LOGIC_VECTOR(2 downto 0);
+ de : in STD_LOGIC_VECTOR(2 downto 0);
+ dDC : out STD_LOGIC_VECTOR(2 downto 0));
+end FuzzySpeedController;
+architecture Behavioural of FuzzySpeedController is
+ type MembershipFunction is array (0 to 7) of STD_LOGIC_VECTOR(2 downto 0);
+ constant NB : MembershipFunction := ("100", "011", "010", "001", "001", "000", "000", "000");
+ constant NM : MembershipFunction := ("000", "100", "011", "010", "001", "001", "000", "000");
+ constant NS : MembershipFunction := ("000", "000", "100", "011", "010", "001", "001", "000");
+ constant ZE : MembershipFunction := ("000", "000", "000", "100", "011", "010", "001", "001");
+ constant PS : MembershipFunction := ("001", "001", "000", "000", "100", "011", "010", "001");
+ constant PM : MembershipFunction := ("001", "001", "000", "000", "000", "100", "011", "010");
+ constant PB : MembershipFunction := ("010", "001", "001", "000", "000", "000", "100", "011");
+ signal rule_outputs : STD_LOGIC_VECTOR(6 downto 0);
+begin
+ process (e, de)
+ begin
+ -- Fuzzy rule evaluation
+ case e is
+ when "000" =>
+ case de is
+ when "000" => rule_outputs <= NB;
+ when "001" => rule_outputs <= NM;
+ when "010" => rule_outputs <= NS;
+ when "011" => rule_outputs <= NS;
+ when "100" => rule_outputs <= NS;
+ when "101" => rule_outputs <= NM;
+ when others => rule_outputs <= "000";
+ end case;
+
+ when "001" =>
+ case de is
+ when "000" => rule_outputs <= NB;
+ when "001" => rule_outputs <= NM;
+ when "010" => rule_outputs <= NS;
+ when "011" => rule_outputs <= NS;
+ when "100" => rule_outputs <= NS;
+ when "101" => rule_outputs <= NM;
+ when others => rule_outputs <= "000";
+ end case;
+ -- Add cases for other values of e
+ when others =>
+ -- Default case
+ rule_outputs <= (others => '0');
+ end case;
+ -- Calculate weighted sum and total weight for centroid defuzzification
+ for i in 0 to 6 loop
+ weighted_sum <= weighted_sum + (to_integer(unsigned(rule_outputs(i))) * (i + 1));
+ total_weight <= total_weight + to_integer(unsigned(rule_outputs(i)));
+ end loop;
+ -- Centroid defuzzification
+ if total_weight /= 0 then
+ dDC <= std_logic_vector(to_unsigned(weighted_sum / total_weight, 3));
+ else
+ dDC <= "000";
+ end if;
+ end process;
+end Behavioural;
+
+Verlilog code2
+
+//Inputs: Clk, DUTY_CYCLE
+//Output: PWM_OUT
+module PWM_Generator (
+input clk, // Clock input
+input [7:0] DUTY_CYCLE, // Input Duty Cycle
+output PWM_OUT // Output PWM
+);
+reg out;
+assign PWM_OUT =out;
+reg [7:0] count=0;
+always @ (*) begin
+out=((DUTY_CYCLE/2)>=count)? 1:0;
+end
+always @ (posedge clk) begin
+if(count==50) count=0;
+count=count+1;
+end
+end module
